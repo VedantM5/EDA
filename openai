@@ -1,0 +1,32 @@
+from openai import OpenAI
+from openai._base_client import SyncHttpxClientWrapper
+from httpx import Request, Response
+import os
+API_KEY = "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"
+FUNCTION_ID = "91627d28-8c68-43e2-a9ae-d1ca5b3a9213"
+MODEL_NAME = "meta/llama-3.1-8b-instruct"
+
+class CustomHttpClient(SyncHttpxClientWrapper):
+   def send(self, request: Request, **kwargs) -> Response:
+       # Override the path to use the NVCF endpoint
+       request.url = request.url.copy_with(
+           path=f"/v2/nvcf/pexec/functions/{FUNCTION_ID}")
+       return super().send(request, **kwargs)
+
+def main():
+   client = OpenAI(
+       base_url="https://api.nvcf.nvidia.com",
+       api_key=API_KEY,
+       http_client=CustomHttpClient(),
+   )
+   response = client.chat.completions.create(
+       model=MODEL_NAME,
+       messages=[
+           {"role": "system", "content": "You are a helpful assistant."},
+           {"role": "user", "content": "Hello, how are you?"}
+       ]
+   )
+   print(response.choices[0].message.content)
+
+if __name__ == "__main__":
+   main()
